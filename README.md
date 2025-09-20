@@ -15,5 +15,6 @@ Data is expected to be put in the same architecture as the IAEUS dataset is intr
     |   |- test 
     |   IA_EUS_TRAIN_COCO.json
     |   IA_EUS_TEST_COCO.json
+    attributes.csv
 ```
 
