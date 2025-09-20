@@ -22,8 +22,8 @@ from customloss import CustomLoss
 from customdataset import CustomDataset
 
 # DEFAULT DIRECTORIES OF ANNOTATED DATA 
-train_folder = "./data/train"
-test_folder = "./data/test"
+train_folder = "../data/train"
+test_folder = "../data/test"
 
 # DEFAULT DIRECTORY FOR MODEL CHECKPOINTS 
 dir_checkpoints = "./checkpoints"
