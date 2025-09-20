@@ -174,16 +174,6 @@ if __name__ == '__main__':
             # criterion = nn.BCEWithLogitsLoss()
             criterion = CustomLoss()
         
-        # if args.model_name[:9] == "googlenet":
-        #     optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-4) # GOOGLENET 
-        #     scheduler=torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.04) # GOOGLENET 
-        # elif args.model_name[:6] == 'resnet': 
-        #     optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4) # RESNET 
-        #     scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1) # RESNET 
-        # else: 
-        #     optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-3) # COMME GOOGLENET 
-        #     scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1) # RESNET 
-        
         optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-3) 
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1)  
         
