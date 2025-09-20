@@ -15,8 +15,6 @@ from torch.utils.data import DataLoader
 from train import train, set_seed
 from test import test
 from models.tvmodelsapi import load_from_tv
-from models.custommodel import CustomModel
-from customloss import CustomLoss
 
 # Import custom classes from other files 
 from customdataset import CustomDataset
@@ -171,8 +169,7 @@ if __name__ == '__main__':
         if n_classes > 2: 
             criterion = nn.CrossEntropyLoss()
         else: 
-            # criterion = nn.BCEWithLogitsLoss()
-            criterion = CustomLoss()
+            criterion = nn.BCEWithLogitsLoss()
         
         optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-3) 
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1)  
