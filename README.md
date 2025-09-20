@@ -1,2 +1,2 @@
 # IAEUS: official code for benchmarks of CNN for IAEUS dataset
-In this 
+This repository contains all the code for the benchmarks of the IAEUS dataset. 
