@@ -21,13 +21,9 @@ from customloss import CustomLoss
 # Import custom classes from other files 
 from customdataset import CustomDataset
 
-# DEFAULT FILES OF ANNOTATED DATA 
-csv_annotations_train = "annotation_csv/annot_train.csv"
-csv_annotations_test = "annotation_csv/annot_test.csv"
-
 # DEFAULT DIRECTORIES OF ANNOTATED DATA 
-train_folder = "./train"
-test_folder = "./test"
+train_folder = "./data/train"
+test_folder = "./data/test"
 
 # DEFAULT DIRECTORY FOR MODEL CHECKPOINTS 
 dir_checkpoints = "./checkpoints"
