@@ -47,9 +47,7 @@ def get_args():
     
     # Model specifications 
     parser.add_argument('--classes', '-c', dest='classes', type=int, default=2, help='Number of classes')
-    model_group = parser.add_mutually_exclusive_group()
-    model_group.add_argument('--model-name', '-m', type=str, dest='model_name', default='resnet50', help='Name of model class')
-    model_group.add_argument('--custommodel', '-cm', dest='cm', action='store_true', default=False, help='Use custom model')
+    parser.add_argument('--model-name', '-m', type=str, dest='model_name', default='resnet50', help='Name of model class')
     parser.add_argument('--hub', action='store_true', default=False, help='Load pretrained torchvision model for pytorch hub')
     parser.add_argument('--load', '-f', type=str, default=False, help='Path to .pth file corresponding to weights to be loaded')
 
@@ -114,19 +112,11 @@ if __name__ == '__main__':
     # Number of output classes 
     n_classes = 1 if args.classes == 2 else args.classes 
     preprocess = None # Preprocessing to apply to the images in input of the model 
-    
-    # Create custom model 
-    if args.cm: 
-        model_name = "custom"
-        net = CustomModel(out_classes=n_classes)
-        preprocess = None 
-        logging.info('Model is a custom one.')
-    
+
     # Load pretrained models from torchvision 
-    else: 
-        net, preprocess = load_from_tv(modelname=args.model_name, n_classes=n_classes, freeze=args.freeze)
-        model_name = args.model_name
-        logging.info(f'Model loaded from torchvision hub')
+    net, preprocess = load_from_tv(modelname=args.model_name, n_classes=n_classes, freeze=args.freeze)
+    model_name = args.model_name
+    logging.info(f'Model loaded from torchvision hub')
 
     # Load weights from checkpoint 
     if args.load: 
@@ -169,7 +159,7 @@ if __name__ == '__main__':
         if n_classes > 2: 
             criterion = nn.CrossEntropyLoss()
         else: 
-            criterion = nn.BCEWithLogitsLoss()
+            criterion = nn.BCELoss()
         
         optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-3) 
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1)  

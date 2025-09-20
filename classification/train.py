@@ -1,5 +1,4 @@
 import logging 
-import wandb 
 from pathlib import Path 
 
 from tqdm import tqdm 
@@ -52,29 +51,7 @@ def train(net,
 
     best_accuracy = 0 
     best_epoch = 0 
-
-    project_name_wandb = "Endosono"
-    # project_name_wandb = "Endosono ImageNet100"
-    wandb_params = {
-        'model_name': modelname, 
-        'epochs': num_epochs, 
-        'batch_size': dataloaders['train'].batch_size, 
-        'learning_rate': optimizer.defaults['lr']
-    }
-    wandb.init(
-        project=project_name_wandb, 
-        resume='allow', 
-        anonymous='must', 
-        config=wandb_params)
     
-    # Customize WandB x-axis for automatic plots 
-    wandb.define_metric("epoch") 
-
-    for phase in phases: 
-        wandb.define_metric("epoch_loss_"+phase, step_metric='epoch')
-        wandb.define_metric("epoch_acc_"+phase, step_metric='epoch', summary="max")
-    wandb.define_metric("best_epoch", step_metric='epoch')
-    wandb.define_metric("current_learning_rate", step_metric='epoch')
     
     # 2. Begin epochs loop 
     for epoch in range(num_epochs):
@@ -102,12 +79,12 @@ def train(net,
                         if n_classes > 2: 
                             probs = torch.softmax(outputs, dim=1)
                             preds = torch.argmax(outputs, dim=1) 
-                            loss = criterion(probs, labels)
+                            loss = criterion(preds, labels)
                         if n_classes == 2: 
                             probs = torch.sigmoid(outputs).flatten()
                             preds = torch.where(probs > threshold, 1, 0)
                             # Compute loss 
-                            loss = criterion(probs, labels)
+                            loss = criterion(preds, labels)
                         
                         # Backward pass + Optimize IF in training phase 
                         if phase == 'train': 
@@ -133,12 +110,6 @@ def train(net,
             epoch_loss = running_loss / n_items 
             epoch_accuracy = running_accuracy / n_items 
             logging.info(f'{phase} - Loss: {epoch_loss:.4f} Acc: {epoch_accuracy:.4f} LR: {lr_scheduler.get_last_lr()[0]:.4f}')
-            wandb.log({ 
-                'epoch_loss_'+str(phase): epoch_loss, 
-                'epoch_acc_'+str(phase): epoch_accuracy, 
-                'epoch': epoch, 
-                'current_learning_rate': current_lr
-            })
 
         # 7. Save best model checkpoint at the end of epoch 
         if epoch_accuracy > best_accuracy: 
@@ -147,11 +118,6 @@ def train(net,
             path_to_best_model_checkpoint = Path(dirckp) / ckpname
             torch.save(net.state_dict(), str(path_to_best_model_checkpoint))
             logging.info(f'Checkpoint {epoch} saved!')
-        wandb.log({
-            'best_epoch': best_epoch, 
-            'epoch': epoch
-        })
-    wandb.finish()
     # Memory cleaning 
     if device == 'cuda':  
         del epoch_loss
