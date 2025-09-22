@@ -79,11 +79,12 @@ def train(net,
                         if n_classes > 2: 
                             probs = torch.softmax(outputs, dim=1)
                             preds = torch.argmax(outputs, dim=1) 
-                            loss = criterion(preds, labels)
+                            loss = criterion(probs, labels)
                         if n_classes == 2: 
                             probs = torch.sigmoid(outputs).flatten()
                             preds = torch.where(probs > threshold, 1, 0)
                             # Compute loss 
+                            print(preds.type(), labels.type())
                             loss = criterion(preds, labels)
                         
                         # Backward pass + Optimize IF in training phase 
