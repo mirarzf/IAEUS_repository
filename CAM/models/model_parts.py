@@ -94,6 +94,3 @@ class ConvBNRelu6(nn.Module):
 
     def forward(self, x): 
         return self.convbnrelu6(x)
-
-# class MBConv(nn.Module):
-#     """ x + [1x1 convolution => [BN] => ReLU6 => 3x3 depthwise convolution => [BN] => ReLU6 => 1x1 convolution """
