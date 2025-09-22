@@ -84,8 +84,7 @@ def train(net,
                             probs = torch.sigmoid(outputs).flatten()
                             preds = torch.where(probs > threshold, 1, 0)
                             # Compute loss 
-                            print(preds.type(), labels.type())
-                            loss = criterion(preds, labels)
+                            loss = criterion(probs.float(), labels.float())
                         
                         # Backward pass + Optimize IF in training phase 
                         if phase == 'train': 

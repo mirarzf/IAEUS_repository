@@ -159,7 +159,7 @@ if __name__ == '__main__':
         if n_classes > 2: 
             criterion = nn.CrossEntropyLoss()
         else: 
-            criterion = nn.BCEWithLogitsLoss()
+            criterion = nn.BCELoss()
         
         optimizer=torch.optim.SGD(net.parameters(), lr=args.lr, weight_decay=1e-3) 
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1)  
