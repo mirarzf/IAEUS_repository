@@ -26,7 +26,6 @@ def train(net,
           lr_scheduler, 
           num_epochs, 
           dataloaders, 
-          modelname = 'resnet50', 
           seed=18, 
           dirckp = 'checkpoints', 
           ckpname = 'checkpoint_epoch_best.pth', 
@@ -50,7 +49,6 @@ def train(net,
     phases = ['train', 'val'] if 'val' in dataloaders.keys() else ['train']
 
     best_accuracy = 0 
-    best_epoch = 0 
     
     
     # 2. Begin epochs loop 
@@ -103,7 +101,6 @@ def train(net,
             # 5. Update the learning rate scheduler at end of training epoch 
             if phase == 'train': 
                 lr_scheduler.step(metrics=loss)
-                current_lr = lr_scheduler.get_last_lr()[0]
             
             # 6. Calculate the epoch loss and epoch accuracy 
             n_items = len(dataloaders[phase].dataset) 
@@ -113,7 +110,6 @@ def train(net,
 
         # 7. Save best model checkpoint at the end of epoch 
         if epoch_accuracy > best_accuracy: 
-            best_epoch = epoch
             best_accuracy = epoch_accuracy 
             path_to_best_model_checkpoint = Path(dirckp) / ckpname
             torch.save(net.state_dict(), str(path_to_best_model_checkpoint))

@@ -184,7 +184,6 @@ if __name__ == '__main__':
             num_epochs=args.epochs, 
             dataloaders=dataloaders, 
             seed=args.seed, 
-            modelname=args.model_name, 
             dirckp=args.ckpfolder, 
             ckpname=args.ckpname, 
             threshold=args.threshold,
@@ -216,8 +215,7 @@ if __name__ == '__main__':
             device=device, 
             dataloader=test_dataloader, 
             n_classes=args.classes, 
-            threshold=args.threshold, 
-            binaryclass=(args.classes==2)
+            threshold=args.threshold
         )
         total_test_time = time() - t_begin_test
         

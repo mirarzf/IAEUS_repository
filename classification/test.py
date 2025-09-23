@@ -124,8 +124,7 @@ def test(net,
          device,
          dataloader, 
          n_classes, 
-         threshold = 0.5, 
-         binaryclass = True): 
+         threshold = 0.5): 
     '''
     IN: 
     n_classes: number of classes to be classified 
