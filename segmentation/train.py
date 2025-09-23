@@ -54,7 +54,6 @@ def train_net(net,
               val_percent: float = 0.1,
               save_checkpoint: bool = False,
               save_best_checkpoint: bool = True,
-              img_scale: float = 0.5,
               amp: bool = False, 
               lossframesdecay: bool = False, 
               rgbtogs: bool = False, 
@@ -103,8 +102,8 @@ def train_net(net,
     val_percent = round(n_val/n_train,2) 
 
     # 3. Create datasets
-    train_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=train_ids, scale=img_scale, transform=dataaugtransform, grayscale=rgbtogs) 
-    val_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=val_ids, scale=img_scale, transform=dataaugtransform, grayscale=rgbtogs) 
+    train_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=train_ids, transform=dataaugtransform, grayscale=rgbtogs) 
+    val_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=val_ids, transform=dataaugtransform, grayscale=rgbtogs) 
 
     # 4. Create data loaders
     loader_args = dict(num_workers=4, pin_memory=True)
@@ -119,7 +118,6 @@ def train_net(net,
         Validation size: {n_val}
         Checkpoints:     {save_checkpoint}
         Device:          {device.type}
-        Images scaling:  {img_scale}
         Mixed Precision: {amp}
     ''')
     # For checkpoint saving 
@@ -229,7 +227,6 @@ def get_args():
     parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=1e-5,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=1.0, help='Downscaling factor of the images')
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
@@ -285,7 +282,6 @@ if __name__ == '__main__':
             batch_size=args.batch_size,
             learning_rate=args.lr,
             device=device,
-            img_scale=args.scale,
             val_percent=args.val / 100,
             save_checkpoint=args.saveall,
             save_best_checkpoint=(not args.nosavebest),
@@ -316,7 +312,6 @@ if __name__ == '__main__':
         images_dir=dir_img_test, 
         masks_dir=dir_mask_test, 
         img_ids=[], 
-        img_scale=args.scale,
         mask_threshold=0.5, 
         rgbtogs=args.grayscale, 
         savepred=False, 

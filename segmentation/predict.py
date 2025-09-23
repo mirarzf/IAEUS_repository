@@ -35,7 +35,6 @@ def predict_img(net,
                 full_img: Image,
                 out_filename: str, 
                 device,
-                img_scale: float = 1,
                 mask_threshold: float =0.5, 
                 rgbtogs: bool = False, 
                 savepred: bool = True, 
@@ -45,7 +44,7 @@ def predict_img(net,
     # If grayscale on, convert img 
     if rgbtogs: 
         full_img = full_img.convert('L')
-    img = torch.from_numpy(MasterDataset.preprocess(full_img, img_scale, is_mask=False))
+    img = torch.from_numpy(MasterDataset.preprocess(full_img, is_mask=False))
 
     img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
@@ -133,7 +132,6 @@ if __name__ == '__main__':
                     full_img=img,
                     out_filename=out_filename, 
                     device=device, 
-                    img_scale=args.scale,
                     mask_threshold=args.mask_threshold,
                     rgbtogs=args.grayscale, 
                     savepred=not args.no_save, 

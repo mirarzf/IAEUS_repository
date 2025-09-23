@@ -1,5 +1,4 @@
 import logging
-from os import listdir
 from os.path import splitext
 from pathlib import Path
 
@@ -9,13 +8,11 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class MasterDataset(Dataset): 
-    def __init__(self, images_dir: str, masks_dir: str, file_ids: list, scale: float = 1.0, mask_suffix: str = '', transform = None, grayscale=False):
+    def __init__(self, images_dir: str, masks_dir: str, file_ids: list, mask_suffix: str = '', transform = None, grayscale=False):
         self.grayscale = grayscale
 
         self.images_dir = Path(images_dir)
         self.masks_dir = Path(masks_dir)
-        assert 0 < scale <= 1, 'Scale must be between 0 and 1'
-        self.scale = scale
         self.mask_suffix = mask_suffix
         if transform != None: 
             if 'geometric' in transform.keys(): 
@@ -39,19 +36,12 @@ class MasterDataset(Dataset):
         return len(self.ids)
 
     @staticmethod
-    def preprocess(pil_img, scale=1, is_mask=False):
-        w, h = pil_img.size
-        # newW, newH = int(scale * w), int(scale * h)
-        # assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
-        # newW, newH = 572, 572
+    def preprocess(pil_img, is_mask=False):
         newW, newH = 300, 300
         # assert newW > w or newH > h, 'Input images will be upsampled due to one dimension of the image being smaller than 572'
         pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
         img_ndarray = np.asarray(pil_img)
         if is_mask: 
-            # img_ndarray = np.where((img_ndarray == 1) | (img_ndarray == 2), 1, 0)[:,:,0] # Last index is to only keep one layer of image and not three channels for R, G and B.  
-            # img_ndarray = np.where(img_ndarray > 0.5, 1, 0)[:,:,0]  
-            # thres = np.quantile(img_ndarray, 0.75)
             thres = 0
             if img_ndarray.ndim == 3: 
                 img_ndarray = np.where(img_ndarray > thres, 1, 0)[:,:,0] # Last index is to only keep one layer of image and not three channels with same value for (R,G,B). 
@@ -119,8 +109,8 @@ class MasterDataset(Dataset):
             img = Image.fromarray(self.colortransform(image=np.asarray(img))['image'])
 
         # Preprocess the images to turn them into an array 
-        img = self.preprocess(img, self.scale, is_mask=False)
-        mask = self.preprocess(mask, self.scale, is_mask=True)
+        img = self.preprocess(img, is_mask=False)
+        mask = self.preprocess(mask, is_mask=True)
 
         # Prepare getitem dictionary output with torch tensors 
         retdict = {}

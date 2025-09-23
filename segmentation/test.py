@@ -61,7 +61,6 @@ def test_net(net,
               images_dir, 
               masks_dir, 
               img_ids: list = [], 
-              img_scale: float = 1.0,
               mask_threshold: float = 0.5, 
               rgbtogs: bool = False, 
               savepred: bool = False, 
@@ -71,7 +70,7 @@ def test_net(net,
         ids = [file.stem for file in images_dir.iterdir() if file.is_file() and file.name != '.gitkeep']
     else: 
         ids = img_ids 
-    test_set = MasterDataset(images_dir=images_dir, masks_dir=masks_dir, file_ids=ids, scale=img_scale, grayscale=rgbtogs) 
+    test_set = MasterDataset(images_dir=images_dir, masks_dir=masks_dir, file_ids=ids, grayscale=rgbtogs) 
 
     # 2. Create data loader 
     loader_args = dict(num_workers=4, pin_memory=True)
@@ -81,7 +80,6 @@ def test_net(net,
         Attention model: {useatt}
         Testing size:    {len(test_set)}
         Device:          {device.type}
-        Images scaling:  {img_scale}
     ''')
 
     # 3. Calculate DICE score and save predicted masks if toggled on 
@@ -152,8 +150,6 @@ def get_args():
                         help='Visualize the images as they are processed')
     parser.add_argument('--mask_threshold', '-t', type=float, default=0.5,
                         help='Minimum probability value to consider a mask pixel white')
-    parser.add_argument('--scale', '-s', type=float, default=1.0,
-                        help='Scale factor for the input images')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
     parser.add_argument('--grayscale', '-gs', action='store_true', default=False, help='Convert RGB image to Greyscale for input')
@@ -192,7 +188,6 @@ if __name__ == '__main__':
         device=device,
         images_dir=imgdir, 
         masks_dir=gtdir, 
-        img_scale=args.scale,
         mask_threshold=args.mask_threshold, 
         rgbtogs=args.grayscale, 
         savepred=savepred, 
