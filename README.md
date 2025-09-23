@@ -18,3 +18,14 @@ Data is expected to be put in the same architecture as the IAEUS dataset is intr
     attributes.csv
 ```
 
+## Classification 
+To train a classification model, set the current working directory with the classification folder and run the following command: 
+```
+python main.py --train 
+```
+
+## CAM 
+To obtain a visualization of different CAM models, set the current working directory with the CAM folder and run the following command: 
+```
+python main.py  
+```

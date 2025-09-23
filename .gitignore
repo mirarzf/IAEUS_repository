@@ -1,2 +1,10 @@
 # Ignore all caches from python 
 **/__pycache__
+
+# Ignore all images 
+**.png
+**.jpg
+**.jpeg
+
+# Ignore eventual model checkpoint created 
+**.pth 

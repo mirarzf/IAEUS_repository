@@ -40,7 +40,7 @@ def get_args():
     # Hyperparameters 
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=5, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
-    parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=1e-5,
+    parser.add_argument('--learning-rate', '-lr', metavar='LR', type=float, default=1e-3,
                         help='Learning rate', dest='lr')
     parser.add_argument('--threshold', '-th', dest='threshold', type=float, default=0.5, help='Threshold for binary classification')
     parser.add_argument('--freeze', action='store_true', default=False, help='Only do transfer learning and freeze pretrained model weights')
