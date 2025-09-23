@@ -122,11 +122,7 @@ def train_net(net,
     ''')
     # For checkpoint saving 
     if save_checkpoint or save_best_checkpoint:
-        adddirckp = 'U-Net-' + str(net.n_channels)
-        if rgbtogs: 
-            adddirckp += '-grayscale'
-        dirckp = dir_checkpoint / adddirckp
-        dirckp.mkdir(parents=True, exist_ok=True)
+        dir_checkpoint.mkdir(parents=True, exist_ok=True)
 
     # 5. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
@@ -197,7 +193,7 @@ def train_net(net,
 
         # 7. (Optional) Save checkpoint at each epoch 
         if save_checkpoint:            
-            torch.save(net.state_dict(), str(dirckp / 'checkpoint_epoch{}.pth'.format(epoch)))
+            torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
         
         # 8. (Optional) Save best model 
@@ -205,14 +201,14 @@ def train_net(net,
             if epoch == 1: 
                 best_valscore = val_score 
                 best_ckpt = 1 
-                torch.save(net.state_dict(), str(dirckp / 'checkpoint_epoch_best.pth'))
+                torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch_best.pth'))
                 logging.info(f'Best checkpoint at {epoch} saved!')
                 best_model_state = deepcopy(net.state_dict())
             else: 
                 if val_score > best_valscore or n_val == 0: 
                     best_valscore = val_score
                     best_ckpt = epoch
-                    torch.save(net.state_dict(), str(dirckp / 'checkpoint_epoch_best.pth'))
+                    torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch_best.pth'))
                     logging.info(f'Best checkpoint at {epoch} saved!')
                     best_model_state = deepcopy(net.state_dict())
             

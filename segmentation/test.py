@@ -32,21 +32,19 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # CHOOSE INPUT DIRECTORIES 
 ## RGB input 
-imgdir = Path("./data/test/pos")
+imgdir = Path("../data/test/pos")
 imgfilenames = [f for f in imgdir.glob('*.png') if f.is_file()] 
 
 ## Ground truth masks 
-gtdir = Path("./data/segmentation/test")
-# gtdir = Path("./data/test/masks-randomsplit")
+gtdir = Path("../data/segmentation/test")
 
 ## Folder where to save the predicted segmentation masks 
 outdir = Path("./results/")
-# outdir = None 
 
 ## Checkpoint directories 
 dir_checkpoint = Path('./checkpoints')
 ### Model file path inside dir_checkpoint folder 
-ckp = "U-Net-3/checkpoint_epoch_best.pth"
+ckp = "./checkpoint_epoch_best.pth"
 
 ##########################################################################################
 
@@ -77,7 +75,6 @@ def test_net(net,
     test_loader = DataLoader(test_set, shuffle=False, batch_size=1, **loader_args)
     
     logging.info(f'''Starting testing:
-        Attention model: {useatt}
         Testing size:    {len(test_set)}
         Device:          {device.type}
     ''')
@@ -87,11 +84,6 @@ def test_net(net,
 
     num_val_batches = len(test_loader)
     dice_score = 0
-    
-    # In the case of no rgb input 
-    lastimgchannel = 3
-    if rgbtogs: 
-        lastimgchannel = 1
 
     # iterate over the test set
     for batch in tqdm(test_loader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
@@ -160,9 +152,6 @@ if __name__ == '__main__':
     args = get_args()
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     # set_seed(0)
-
-    useatt = True if args.input_att != None else False 
-    useflow = True if (args.flow and args.input_flow != None) else False 
 
     n_channels = 3 
     if args.grayscale: 

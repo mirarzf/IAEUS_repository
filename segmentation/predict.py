@@ -3,13 +3,12 @@ import logging
 from pathlib import Path
 from tqdm import tqdm
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
 
 from unet.unetutils.data_loading import MasterDataset
-from unet.unet_model import UNet, UNetAtt
+from unet.unet_model import UNet 
 from unet.unetutils.utils import plot_img_and_mask
 from test import mask_to_image
 
@@ -19,16 +18,16 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # CHOOSE INPUT DIRECTORIES 
 ## RGB input 
-imgdir = Path("./data/segmentation/test")
+imgdir = Path("../data/segmentation/test")
 imgfilenames = [f for f in imgdir.glob('*.png') if f.is_file()] 
 
 ## Folder where to save the predicted segmentation masks 
-outdir = Path("./results/unet")
+outdir = Path("./results/")
 
 ## Checkpoint directories 
 dir_checkpoint = Path('./checkpoints')
 ### Model file path inside dir_checkpoint folder 
-ckp = "U-Net-3/checkpoint_epoch_best.pth"
+ckp = "./checkpoint_epoch_best.pth"
 
 
 def predict_img(net,
@@ -122,6 +121,9 @@ if __name__ == '__main__':
     net.to(device=device)
 
     logging.info('Model loaded!')
+
+    if not args.no_save: 
+        outdir.mkdir(parents=True, exist_ok=True)
 
     for i, filename in enumerate(tqdm(in_files)):
         logging.info(f'\nPredicting image {filename} ...')

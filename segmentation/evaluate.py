@@ -2,8 +2,6 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-import numpy as np 
-
 from unet.unetutils.dice_score import multiclass_dice_coeff, dice_coeff
 
 # # REPRODUCIBILITY 
