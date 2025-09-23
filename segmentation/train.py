@@ -6,9 +6,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb
 from torch import optim
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 import albumentations as A
 from tqdm import tqdm
 
@@ -37,22 +36,15 @@ def set_seed(seed: int = 42) -> None:
 
 # DATA DIRECTORIES 
 ## FOR TRAINING 
-dir_img = Path('./data/train/pos')
-
-dir_mask = Path('./data/segmentation/train/')
-
-dir_flo = Path('./data/flows/')
-# dir_flo = Path('./data/test/flows/')
+dir_img = Path('../data/train/pos')
+dir_mask = Path('../data/segmentation/train/')
 
 ## FOR TESTING 
-dir_img_test = Path('./data/test/pos/')
-dir_mask_test = Path('./data/segmentation/test/')
+dir_img_test = Path('../data/test/pos/')
+dir_mask_test = Path('../data/segmentation/test/')
 
 ## PARENT FOLDER OF CHECKPOINTS 
 dir_checkpoint = Path('./checkpoints')
-
-## FOR WANDB LOGGING 
-class_labels = {0: 'background', 1: 'tumor'}
 
 def train_net(net,
               device,
@@ -111,31 +103,13 @@ def train_net(net,
     val_percent = round(n_val/n_train,2) 
 
     # 3. Create datasets
-    train_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=train_ids, scale=img_scale, transform=dataaugtransform, attmaps_dir=dir_attmap, withatt=useatt, flo_dir=dir_flo, withflo=useflow, grayscale=rgbtogs) 
-    val_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=val_ids, scale=img_scale, transform=dataaugtransform, attmaps_dir=dir_attmap, withatt=useatt, flo_dir=dir_flo, withflo=useflow, grayscale=rgbtogs) 
-
-    print(len(val_set)) ############################ DEBUG PRINT 
+    train_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=train_ids, scale=img_scale, transform=dataaugtransform, grayscale=rgbtogs) 
+    val_set = MasterDataset(images_dir=dir_img, masks_dir=dir_mask, file_ids=val_ids, scale=img_scale, transform=dataaugtransform, grayscale=rgbtogs) 
 
     # 4. Create data loaders
     loader_args = dict(num_workers=4, pin_memory=True)
     train_loader = DataLoader(train_set, shuffle=True, batch_size=batch_size, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, batch_size=batch_size, **loader_args)
-
-    # (Initialize logging)
-    project_name = "Endosono-Segmentation" # 
-    experiment = wandb.init(project=project_name, resume='allow', anonymous='must')
-    experiment.config.update(dict(
-        epochs=epochs, 
-        batch_size=batch_size, 
-        learning_rate=learning_rate, 
-        val_percent=val_percent, 
-        save_checkpoint=save_checkpoint, 
-        img_scale=img_scale, 
-        amp=amp, 
-        augmented_data=(True if 'geometric' in dataaugtransform.keys() else False), 
-        validation_size=n_val, 
-        training_size = n_train
-        ))
 
     logging.info(f'''Starting training:
         Epochs:          {epochs}
@@ -148,11 +122,6 @@ def train_net(net,
         Images scaling:  {img_scale}
         Mixed Precision: {amp}
     ''')
-    logging.info(f'''Validation dataset contains following ids: {val_ids}''')
-    # For image logging for wandb 
-    lastimgchannel = 3
-    if rgbtogs: 
-        lastimgchannel = 1
     # For checkpoint saving 
     if save_checkpoint or save_best_checkpoint:
         adddirckp = 'U-Net-' + str(net.n_channels)
@@ -162,14 +131,10 @@ def train_net(net,
         dirckp.mkdir(parents=True, exist_ok=True)
 
     # 5. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    # optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-2, momentum=0.9) # VANILLA SETTINGS: net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9
     optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2, factor=0.1)  # goal: maximize Dice score
-    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda curr_epoch: (epochs - curr_epoch) / epochs) 
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
-    criterion = nn.CrossEntropyLoss() # VANILLA 
-    debug_criterion = nn.CrossEntropyLoss(reduction='none') ############## DEBUG CROSS ENTROPY
-    # criterion = nn.BCELoss() # GROUND TRUTH = SOFT MAPS 
+    criterion = nn.CrossEntropyLoss() 
     global_step = 0
 
     # 6. Begin training
@@ -179,8 +144,6 @@ def train_net(net,
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
                 images = batch['image']
-                ## For wandb logging: 
-                wnbimg = images[0,:lastimgchannel]
                 true_masks = batch['mask']
                 index = batch['index']
 
@@ -200,8 +163,6 @@ def train_net(net,
                     if net.n_classes == 1:
                         loss = criterion(masks_pred.squeeze(1), true_masks.float())
                         loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
-                        with torch.no_grad(): 
-                            debug_loss = debug_criterion(masks_pred.squeeze(1), true_masks.float()) ################################# DEBUG CROSS ENTROPY 
                     else:
                         loss = criterion(masks_pred, true_masks)
                         loss += dice_loss(
@@ -209,8 +170,6 @@ def train_net(net,
                             F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
                             multiclass=True
                         )
-                        with torch.no_grad(): 
-                            debug_loss = debug_criterion(masks_pred, true_masks) ################################# DEBUG CROSS ENTROPY 
                     
                     if lossframesdecay: 
                         loss /= index 
@@ -224,54 +183,19 @@ def train_net(net,
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
-                experiment.log({
-                    'train loss': loss.item(),
-                    'step': global_step,
-                    'epoch': epoch
-                })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
             # Evaluation round (validation testing at the end of epoch)
             net.eval()
-            histograms = {}
-            for tag, value in net.named_parameters():
-                tag = tag.replace('/', '.')
-                if not torch.isinf(value).any():
-                    histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                if not torch.isinf(value.grad).any():
-                    histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-            val_score = evaluate(net, val_loader, device, rgbtogs=rgbtogs, noimg=noimg)
+            val_score = evaluate(net, val_loader, device)
             scheduler.step(val_score)
             net.train()
 
             logging.info('Validation Dice score: {}'.format(val_score))
-            epochlog = {
-                'learning rate': optimizer.param_groups[0]['lr'],
-                'validation Dice': val_score,
-                'cross entropy': wandb.Image(debug_loss[0].float().cpu()), 
-                'step': global_step,
-                'epoch': epoch,
-                **histograms
-            } 
-            epochlog['images'] = wandb.Image(wnbimg.cpu()) 
-            epochlog['masks'] = wandb.Image(wnbimg.cpu(), 
-                                            masks = { 
-                                                'true': {
-                                                    "mask_data": true_masks[0].float().cpu().numpy(), 
-                                                    "class_labels": class_labels
-                                                }, 
-                                                'pred': { 
-                                                    "mask_data": masks_pred.argmax(dim=1)[0].float().cpu().numpy(), 
-                                                    "class_labels": class_labels
-                                                }
-                                            })
-            
-            experiment.log(epochlog)
             
         epoch_loss /= len(train_loader)
-        # scheduler.step() # Change learning rate 
-        # scheduler.step(epoch_loss)
+        scheduler.step(epoch_loss) # Change learning rate 
 
         # 7. (Optional) Save checkpoint at each epoch 
         if save_checkpoint:            
@@ -295,13 +219,6 @@ def train_net(net,
                     best_model_state = deepcopy(net.state_dict())
             
             logging.info('Epoch loss: {}'.format(epoch_loss))
-
-        # 9. Log all the previous parameters 
-        experiment.log({
-            'epoch': epoch, 
-            'best epoch': best_ckpt, 
-            'train loss epoch avg': epoch_loss, 
-        })
     
     return best_ckpt, best_model_state, val_ids
 
@@ -375,7 +292,6 @@ if __name__ == '__main__':
             amp=args.amp, 
             lossframesdecay=args.framesdecay, 
             rgbtogs=args.grayscale, 
-            noimg=args.noimg, 
             foldnumber=args.foldnb)
         logging.info(f'Best model is found at checkpoint #{best_ckpt}.')
     except KeyboardInterrupt:

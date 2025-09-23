@@ -9,16 +9,11 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class MasterDataset(Dataset): 
-    def __init__(self, images_dir: str, masks_dir: str, file_ids: list, scale: float = 1.0, mask_suffix: str = '', transform = None, attmaps_dir: str = '', withatt: bool = True, flo_dir: str = '', withflo: bool = True, grayscale=False):
-        self.withatt = withatt
-        self.withflo = withflo
-
+    def __init__(self, images_dir: str, masks_dir: str, file_ids: list, scale: float = 1.0, mask_suffix: str = '', transform = None, grayscale=False):
         self.grayscale = grayscale
 
         self.images_dir = Path(images_dir)
         self.masks_dir = Path(masks_dir)
-        self.attmaps_dir = Path(attmaps_dir)
-        self.flo_dir = Path(flo_dir)
         assert 0 < scale <= 1, 'Scale must be between 0 and 1'
         self.scale = scale
         self.mask_suffix = mask_suffix
@@ -100,17 +95,9 @@ class MasterDataset(Dataset):
         name = self.ids[idx]
         mask_file = list(self.masks_dir.glob(name + self.mask_suffix + '.*'))
         img_file = list(self.images_dir.glob(name + '.*'))
-        if self.withatt: 
-            attmap_file = list(self.attmaps_dir.glob(name + '.*'))
-        if self.withflo: 
-            flo_file = list(self.flo_dir.glob(name + '.*'))
         
         assert len(img_file) == 1, f'Either no image or multiple images found for the ID {name}: {img_file}'
         assert len(mask_file) == 1, f'Either no mask or multiple masks found for the ID {name}: {mask_file}.'
-        if self.withatt: 
-            assert len(attmap_file) == 1, f'Either no attention map or multiple attention maps found for the ID {name}: {attmap_file}.'
-        if self.withflo: 
-            assert len(flo_file) == 1, f'Either no optical flow file or multiple attention optical flow files for the ID {name}: {flo_file}.'
         
         # Load the images 
         img = self.load(img_file[0])
@@ -118,32 +105,13 @@ class MasterDataset(Dataset):
         if self.grayscale: 
             img = img.convert('L')
         mask = self.load(mask_file[0])
-        if self.withatt: 
-            attmap = self.load(attmap_file[0])
-        if self.withflo: 
-            flo = self.load(flo_file[0])
 
         assert img.size == mask.size, \
             f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
         
         # Apply data augmentation 
         if self.geotransform != None: 
-            if self.withatt and self.withflo: 
-                transformed = self.geotransform(image=np.asarray(img), mask=np.asarray(mask), attmap=np.asarray(attmap), flox=flo[:,:,0], floy=flo[:,:,1])
-                attmap = Image.fromarray(transformed['attmap'])
-            elif self.withatt and not self.withflo: 
-                transformed = self.geotransform(image=np.asarray(img), mask=np.asarray(mask), attmap=np.asarray(attmap))
-                attmap = Image.fromarray(transformed['attmap'])
-            elif not self.withatt and self.withflo: 
-                transformed = self.geotransform(image=np.asarray(img), mask=np.asarray(mask), flox=flo[:,:,0], floy=flo[:,:,1])
-            else: # No attention and no optical flow input 
-                transformed = self.geotransform(image=np.asarray(img), mask=np.asarray(mask))
-            if self.withflo: 
-                flox = transformed['flox']
-                floy = transformed['floy']
-                flox = np.expand_dims(flox, axis=2)
-                floy = np.expand_dims(floy, axis=2)
-                flo = np.concatenate((flox, floy), axis=2)
+            transformed = self.geotransform(image=np.asarray(img), mask=np.asarray(mask))
             img = Image.fromarray(transformed['image'])
             mask = Image.fromarray(transformed['mask'])
         
@@ -153,25 +121,11 @@ class MasterDataset(Dataset):
         # Preprocess the images to turn them into an array 
         img = self.preprocess(img, self.scale, is_mask=False)
         mask = self.preprocess(mask, self.scale, is_mask=True)
-        if self.withatt: 
-            attmap = self.preprocess(attmap, self.scale, is_mask=True)
 
         # Prepare getitem dictionary output with torch tensors 
         retdict = {}
         retdict['image'] = torch.as_tensor(img.copy()).float().contiguous()
         retdict['mask'] = torch.as_tensor(mask.copy()).long().contiguous()
-        if self.withatt: 
-            retdict['attmap'] = torch.as_tensor(attmap.copy()).long().contiguous()
-        if self.withflo: 
-            flo = self.normalizeflow(flo)
-            flo = flo.transpose((2, 0, 1)) # Transpose dimensions of optical flow array so that they become (2, width, height) 
-            flo_tensor = torch.as_tensor(flo.copy()).float().contiguous() # Transform into a tensor beforeapplying interpolation to change input size 
-            # Then change the size of your tensor before adding it to the input dictionary 
-            flo_tensor = flo_tensor.unsqueeze(0) 
-            flo_tensor = torch.nn.functional.interpolate(input=flo_tensor, size=(300,300), mode='bicubic', align_corners=True)
-            flo_tensor = flo_tensor.squeeze()
-            # Add optical flow tensor to return dictionary 
-            retdict['flow'] = flo_tensor
         
         retdict['index'] = idx+1
         return retdict
